@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Student Progress Tracker - Class A2</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  :root{--grid-color:rgba(0,0,0,.1)}
+  body{background:#f8f9fa;color:#212529}
+  .text-muted-ux{color:#6c757d!important}
+  .card{background:#fff;border:1px solid #dee2e6}
+  textarea.form-control{background:#fff;color:#212529;border-color:#ced4da}
+  .table{color:#212529}
+  .table>:not(caption)>*>*{background:transparent}
+
+  /* Field chart */
+  .field{position:relative}
+  .field-title{font-weight:700}
+  .progress-field{position:relative;height:160px;border-radius:12px;overflow:visible;border:1px solid rgba(0,0,0,.1)}
+  .progress-swatch{position:absolute;inset:0;border-radius:12px;opacity:.9}
+  .progress-swatch[data-key="Giờ học"]{background:#198754}
+  .progress-swatch[data-key="Bookworms"]{background:#ffca28}
+  .progress-swatch[data-key="Phát âm"]{background:#ff9800}
+  .progress-swatch[data-key="Extra"]{background:#4f86ff}
+  .ticks{position:absolute;inset:0;pointer-events:none}
+  .tick{position:absolute;top:-10px;transform:translateX(-50%);text-align:center}
+  .tick i{display:block;height:100%;width:1px;background:var(--grid-color);opacity:.8;margin:10px auto 0}
+  .tick b{display:block;font-size:14px;color:#000}
+
+  .bubble{position:absolute;transform:translate(-50%,-50%);border-radius:999px;padding:.5rem .75rem;display:flex;gap:.25rem;align-items:center;border:1px solid rgba(0,0,0,.25);cursor:pointer;background:radial-gradient(circle at 30% 20%, #fff, #e0e0e0);color:#000;font-weight:700}
+  .bubble .name{font-weight:700;font-size:.9rem;white-space:nowrap}
+  .bubble .val{font-size:.8rem;opacity:.8}
+
+  /* Ruler below charts */
+  .ruler{position:relative;height:40px;margin-top:8px}
+  .ruler .rl{position:absolute;bottom:6px;transform:translateX(-50%);font-size:12px;color:#555}
+  .ruler .rl i{display:block;height:14px;width:1px;background:var(--grid-color);margin:0 auto 4px}
+
+  /* Mini charts for Giờ học */
+  .mini-grid .progress-field{height:120px}
+  .mini-grid .range-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.25rem}
+  .mini-grid .range-title{font-weight:600}
+  .mini-grid .range-note{font-size:.8rem;color:#6c757d}
+  .toggle-arrow{font-size:1rem;cursor:pointer;background:none;border:none;color:#555}
+  .toggle-arrow[aria-expanded="true"]::after{content:" ▲"}
+  .toggle-arrow[aria-expanded="false"]::after{content:" ▼"}
+
+  /* Compact style for top three bars */
+  .field.compact .progress-field{height:160px}
+</style>
+</head>
+<body>
+    
+     <nav class="navbar bg-light fixed-top">
+  <div class="container">
+    <a class="navbar-brand" href="#">Bí Me</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Bí Me</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+        <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="index.html">A1</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="A2.html">A2</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="B1.html">B1</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+    
+<div class="container mt-5 py-4">
+  <h1 class="h3 text-center mb-3">Student Progress Tracker - Class A2</h1>
+  <div class="text-center mb-4">
+    <label for="className" class="form-label me-2 fw-bold">Lớp:</label>
+    <input type="text" id="className" class="form-control d-inline-block w-auto text-center" placeholder="SE373">
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="card mb-3">
+    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+      <span>Cài đặt chung</span>
+      <span id="startBadge" class="badge text-bg-info d-none">Bắt đầu: <span id="startBadgeVal"></span></span>
+    </div>
+    <div class="card-body">
+      <div class="row g-3 align-items-center">
+        <div class="col-auto">
+          <label for="startDate" class="col-form-label">Ngày bắt đầu học:</label>
+        </div>
+        <div class="col-auto">
+          <input type="date" id="startDate" class="form-control">
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-primary" id="saveStart">Lưu</button>
+          <button class="btn btn-outline-secondary" id="clearStart" type="button">Xoá mốc</button>
+        </div>
+      </div>
+      <div class="mt-2 small text-muted">Mốc này là căn cứ tính cảnh báo: Giờ học ≥ 1 giờ/ngày; Bookworms ≥ 1 cuốn/tuần; Phát âm ≥ 1 video/tuần; Extra ≥ 1 movie/tuần.</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD ALERTS -->
+  <div id="alerts" class="mb-3"></div>
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div id="list" class="vstack gap-3 mb-2"></div>
+      <div id="ruler" class="ruler"></div>
+
+      <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>Dữ liệu (JSON)</span>
+          <div class="btn-group">
+            <button id="clearAll" class="btn btn-danger btn-sm">Clear All</button>
+            <button type="button" class="btn btn-danger btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false"><span class="visually-hidden">Toggle</span></button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><button class="dropdown-item" id="clearStudents" type="button">Chỉ xoá học viên</button></li>
+              <li><button class="dropdown-item text-danger" id="resetEverything" type="button">Xoá mọi thứ (targets + học viên)</button></li>
+            </ul>
+          </div>
+        </div>
+        <div class="card-body">
+          <textarea id="editor" class="form-control" rows="10"></textarea>
+          <div class="mt-2 d-flex flex-wrap gap-2">
+            <button id="apply" class="btn btn-primary">Áp dụng dữ liệu</button>
+            <button id="downloadJson" type="button" class="btn btn-outline-secondary">Tải JSON</button>
+            <input id="uploadJson" type="file" accept="application/json" class="d-none"/>
+            <button id="uploadJsonBtn" type="button" class="btn btn-outline-dark">Upload JSON</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header">Thêm / chỉnh sửa học viên</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="studentName" class="form-label">Tên học viên</label>
+            <input type="text" id="studentName" class="form-control" placeholder="Nhập tên học viên">
+          </div>
+          <div class="mb-3">
+            <label for="goal" class="form-label">Mục tiêu</label>
+            <select id="goal" class="form-select"></select>
+          </div>
+          <div class="mb-3">
+            <label for="completed" class="form-label">Chỉ tiêu đã hoàn thành</label>
+            <input type="number" id="completed" class="form-control" step="0.1" min="0">
+          </div>
+          <div class="mb-3">
+            <label for="dateNote" class="form-label">Ngày nhập mục tiêu</label>
+            <input type="date" id="dateNote" class="form-control">
+          </div>
+          <div class="d-flex gap-2 flex-wrap mb-3">
+            <button id="saveBtn" class="btn btn-primary">Thêm học viên</button>
+            <button id="resetBtn" type="button" class="btn btn-secondary">Làm mới</button>
+          </div>
+
+          <h6 class="mb-2">Danh sách</h6>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead class="text-muted-ux">
+                <tr><th>Tên</th><th>Mục tiêu</th><th>Đã làm</th><th>Ngày nhập</th><th class="text-end">Hành động</th></tr>
+              </thead>
+              <tbody id="tblBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let SETTINGS={startDate:null};
+// Targets adjusted to match the provided mock: Bookworms=8, Extra=30, Phát âm=11, Giờ học=84
+let DATA={targets:{"Bookworms":8,"Extra":30,"Phát âm":11,"Giờ học":84},students:[]};
+let editingId=null;
+
+const listEl=document.getElementById('list');
+const editor=document.getElementById('editor');
+const clearBtn=document.getElementById('clearAll');
+const clearStudentsBtn=document.getElementById('clearStudents');
+const resetEverythingBtn=document.getElementById('resetEverything');
+const downloadBtn=document.getElementById('downloadJson');
+const uploadBtn=document.getElementById('uploadJsonBtn');
+const uploadInput=document.getElementById('uploadJson');
+
+function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
+function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
+function todayISO(){const d=new Date();d.setHours(0,0,0,0);return d.toISOString().slice(0,10)}
+function daysBetween(a,b){const MS=86400000;const A=new Date(a),B=new Date(b);A.setHours(0,0,0,0);B.setHours(0,0,0,0);return Math.max(0,Math.round((B-A)/MS));}
+
+function makeTicks(container,target,key){
+  const custom={
+    'Bookworms':[2,4,6],
+    'Extra':[8,16,24],
+    'Phát âm':[3,6,9]
+  };
+  const ticks=document.createElement('div');ticks.className='ticks';
+  if(custom[key]){
+    custom[key].forEach(v=>{const t=document.createElement('div');t.className='tick';t.style.left=(v/target*100)+'%';t.innerHTML=`<b>${v}</b><i></i>`;ticks.appendChild(t);});
+    const t=document.createElement('div');t.className='tick';t.style.left='100%';t.innerHTML=`<b>${target}</b><i></i>`;ticks.appendChild(t);
+  }else{
+    [0,.25,.5,.75,1].forEach(p=>{const t=document.createElement('div');t.className='tick';t.style.left=(p*100)+'%';t.innerHTML=`<b>${Math.round(target*p)}</b><i></i>`;ticks.appendChild(t);});
+  }
+  container.appendChild(ticks);
+}
+
+function computeExpectations(s){
+  const base=SETTINGS.startDate||s.dateNote||todayISO();
+  const d=daysBetween(base,todayISO())+1; // tính cả hôm nay
+  if(s.goal==="Giờ học") return {expected:d,unit:"giờ",basis:"1 giờ/ngày", base};
+  if(s.goal==="Bookworms") return {expected:Math.max(1,Math.ceil(d/7)),unit:"cuốn",basis:"1 cuốn/tuần", base};
+  if(s.goal==="Phát âm") return {expected:Math.max(1,Math.ceil(d/7)),unit:"video",basis:"1 video/tuần", base};
+  if(s.goal==="Extra") return {expected:Math.max(1,Math.ceil(d/7)),unit:"movie",basis:"1 movie/tuần", base};
+  return {expected:0,unit:"",basis:"", base};
+}
+
+function renderAlerts(){
+  const wrap=document.getElementById('alerts');wrap.innerHTML='';
+  const problems=[]; const missing=[]; const ok=[];
+  DATA.students.forEach(s=>{
+    const hasBase = Boolean(SETTINGS.startDate || s.dateNote);
+    if(!hasBase){missing.push(`<b>${s.name}</b> – thiếu ngày nhập cho <i>${s.goal}</i>`);return;}
+    const exp=computeExpectations(s);
+    const done=parseFloat(s.completed||0);
+    if(done < exp.expected){
+      problems.push(`<b>${s.name}</b> – <i>${s.goal}</i>: ${done}/${exp.expected} ${exp.unit} (thiếu ${(exp.expected-done).toFixed(1)}; từ ${exp.base}; quy định ${exp.basis})`);
+    }else{
+      ok.push(`<b>${s.name}</b> – <i>${s.goal}</i>: ${done}/${exp.expected} ${exp.unit} ✅ (từ ${exp.base})`);
+    }
+  });
+
+  const badge=document.getElementById('startBadge');
+  const badgeVal=document.getElementById('startBadgeVal');
+  if(SETTINGS.startDate){badge.classList.remove('d-none');badgeVal.textContent=SETTINGS.startDate;} else {badge.classList.add('d-none');}
+
+  if(problems.length){
+    const alert=document.createElement('div');
+    alert.className='alert alert-danger';
+    alert.innerHTML=`<div class='fw-bold mb-1'>Cảnh báo: Chưa đạt định mức</div><ul class='mb-0'>${problems.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+    wrap.appendChild(alert);
+  }
+  if(missing.length){
+    const alert=document.createElement('div');
+    alert.className='alert alert-warning';
+    alert.innerHTML=`<div class='fw-bold mb-1'>Thiếu ngày mốc</div><ul class='mb-0'>${missing.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+    wrap.appendChild(alert);
+  }
+  if(!problems.length && !missing.length && DATA.students.length){
+    const alert=document.createElement('div');
+    alert.className='alert alert-success';
+    alert.textContent='Tất cả đều đạt định mức tính tới hôm nay ('+todayISO()+').';
+    wrap.appendChild(alert);
+  }
+}
+
+function render(){
+  // Fill goals select
+  const goalSel=document.getElementById('goal');
+  goalSel.innerHTML='';
+  Object.keys(DATA.targets).forEach(k=>{const opt=document.createElement('option');opt.value=k;opt.textContent=k;goalSel.appendChild(opt);});
+
+  // Bars — order: Bookworms, Extra, Phát âm, Giờ học
+  listEl.innerHTML='';
+  ['Bookworms','Phát âm','Extra','Giờ học'].forEach((key)=>{
+    const target=DATA.targets[key];
+    const card=document.createElement('div');card.className='card field';
+
+    // Giờ học: mini charts ranges
+    if(key==='Giờ học'){
+      card.innerHTML=`<div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="field-title">${key}</div>
+          <div class="text-muted-ux">${target}</div>
+        </div>
+        <div class="mini-grid vstack gap-3"></div>
+      </div>`;
+
+      const ranges=[
+        {label:'0–21',start:0,end:21},
+        {label:'21–42',start:21,end:42},
+        {label:'42–63',start:42,end:63},
+        {label:'63–84',start:63,end:84},
+      ];
+      const grid=card.querySelector('.mini-grid');
+      const items=DATA.students.filter(s=>s.goal===key).sort((a,b)=>a.completed-b.completed);
+
+      ranges.forEach((rg)=>{
+        const col=document.createElement('div');
+        col.className='w-100';
+        const id = `range-${rg.start}-${rg.end}`;
+
+        let inner = '';
+        if(rg.start>0){
+          inner = `
+            <div class="range-head">
+              <div class="range-title">${rg.label}</div>
+              <button class="toggle-arrow" type="button" data-bs-toggle="collapse" data-bs-target="#${id}" aria-expanded="false" aria-controls="${id}"></button>
+            </div>
+            <div id="${id}" class="collapse">
+              <div class="progress-field mini"><div class="progress-swatch" data-key="${key}"></div></div>
+            </div>`;
+        } else {
+          inner = `
+            <div class="range-head"><div class="range-title">${rg.label}</div><div class="range-note">mỗi biểu đồ: 21 giờ</div></div>
+            <div class="progress-field mini"><div class="progress-swatch" data-key="${key}"></div></div>`;
+        }
+        col.innerHTML=inner;
+
+        const bar = (rg.start>0)
+          ? col.querySelector(`#${id} .progress-field`)
+          : col.querySelector('.progress-field');
+
+        // Filter students falling into this subrange
+        const arr=items.filter(s=>{
+          const v=parseFloat(s.completed||0);
+          if(rg.start===0){ return v>=rg.start && v<=rg.end; }
+          return v>rg.start && v<=rg.end;
+        });
+        const group={}; arr.forEach(s=>{(group[s.completed] ||= []).push(s)});
+        Object.entries(group).forEach(([completed, sameList])=>{
+          sameList.forEach((s,i)=>{
+            const bub=document.createElement('div');bub.className='bubble';bub.dataset.id=s.id;
+            const v=parseFloat(s.completed||0);
+            const pct = clamp((v - rg.start)/(rg.end - rg.start), 0, 1);
+            bub.style.left=(pct*100)+'%';
+            const yOffset=i*28; // stack vertically for duplicates
+            bub.style.top=`calc(50% - ${yOffset}px)`;
+            const exp=computeExpectations(s);
+            bub.innerHTML=`<span class="name">${s.name}</span><span class="val">${s.completed}</span>`;
+            bub.title=(s.dateNote?`Ngày nhập: ${s.dateNote} | `:"")+`Định mức: ${exp.basis} → kỳ vọng ${exp.expected} ${exp.unit} (từ ${exp.base})`;
+            bub.onclick=()=>startEdit(s.id);
+            bar.appendChild(bub);
+          });
+        });
+        grid.appendChild(col);
+      });
+
+      listEl.appendChild(card);
+      return; // skip default single bar for Giờ học
+    }
+
+    // Extra: split into two mini charts 0–16 (open) and 16–30 (collapsible)
+    if(key==='Extra'){
+      card.innerHTML=`<div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="field-title">${key}</div>
+          <div class="text-muted-ux">${target}</div>
+        </div>
+        <div class="mini-grid vstack gap-3"></div>
+      </div>`;
+
+      const rangesExtra=[
+        {label:'0–16',start:0,end:16},
+        {label:'16–30',start:16,end:30, collapsible:true},
+      ];
+      const gridExtra=card.querySelector('.mini-grid');
+      const itemsExtra=DATA.students.filter(s=>s.goal===key).sort((a,b)=>a.completed-b.completed);
+
+      rangesExtra.forEach((rg)=>{
+        const col=document.createElement('div');
+        col.className='w-100';
+        const id = `extra-${rg.start}-${rg.end}`;
+
+        let inner='';
+        if(rg.collapsible){
+          inner = `
+            <div class="range-head">
+              <div class="range-title">${rg.label}</div>
+              <button class="toggle-arrow" type="button" data-bs-toggle="collapse" data-bs-target="#${id}" aria-expanded="false" aria-controls="${id}"></button>
+            </div>
+            <div id="${id}" class="collapse">
+              <div class="progress-field mini"><div class="progress-swatch" data-key="${key}"></div></div>
+            </div>`;
+        } else {
+          inner = `
+            <div class="range-head"><div class="range-title">${rg.label}</div><div class="range-note">mỗi biểu đồ: ${rg.end-rg.start} movie</div></div>
+            <div class="progress-field mini"><div class="progress-swatch" data-key="${key}"></div></div>`;
+        }
+        col.innerHTML=inner;
+
+        const bar = (rg.collapsible)
+          ? col.querySelector(`#${id} .progress-field`)
+          : col.querySelector('.progress-field');
+
+        const arr=itemsExtra.filter(s=>{
+          const v=parseFloat(s.completed||0);
+          if(rg.start===0){ return v>=rg.start && v<=rg.end; }
+          return v>rg.start && v<=rg.end;
+        });
+        const group={}; arr.forEach(s=>{(group[s.completed] ||= []).push(s)});
+        Object.entries(group).forEach(([completed, sameList])=>{
+          sameList.forEach((s,i)=>{
+            const bub=document.createElement('div');bub.className='bubble';bub.dataset.id=s.id;
+            const v=parseFloat(s.completed||0);
+            const pct = clamp((v - rg.start)/(rg.end - rg.start), 0, 1);
+            bub.style.left=(pct*100)+'%';
+            const yOffset=i*28;
+            bub.style.top=`calc(50% - ${yOffset}px)`;
+            const exp=computeExpectations(s);
+            bub.innerHTML=`<span class="name">${s.name}</span><span class="val">${s.completed}</span>`;
+            bub.title=(s.dateNote?`Ngày nhập: ${s.dateNote} | `:"")+`Định mức: ${exp.basis} → kỳ vọng ${exp.expected} ${exp.unit} (từ ${exp.base})`;
+            bub.onclick=()=>startEdit(s.id);
+            bar.appendChild(bub);
+          });
+        });
+        gridExtra.appendChild(col);
+      });
+
+      listEl.appendChild(card);
+      return; // skip default bar for Extra
+    }
+
+    // Default single wide bar for Bookworms, Phát âm (and others) (compact height)
+    
+    card.innerHTML=`<div class=\"card-body\"><div class=\"d-flex justify-content-between align-items-center mb-2\"><div class=\"field-title\">${key}</div><div class=\"text-muted-ux\">${target}</div></div><div class=\"progress-field\"><div class=\"progress-swatch\" data-key=\"${key}\"></div></div></div>`;
+
+    const bar=card.querySelector('.progress-field');
+    makeTicks(bar, target, key);
+
+    const items=DATA.students.filter(s=>s.goal===key).sort((a,b)=>a.completed-b.completed);
+    const group={}; items.forEach(s=>{(group[s.completed] ||= []).push(s)});
+
+    Object.entries(group).forEach(([completed, arr])=>{
+      arr.forEach((s,i)=>{
+        const bub=document.createElement('div');bub.className='bubble';bub.dataset.id=s.id;
+        const pct = clamp(s.completed/target, 0, 1);
+        bub.style.left=(pct*100)+'%';
+        const yOffset=i*28; // stack vertically for same values
+        bub.style.top=`calc(50% - ${yOffset}px)`;
+        const exp=computeExpectations(s);
+        bub.innerHTML=`<span class=\"name\">${s.name}</span><span class=\"val\">${s.completed}</span>`;
+        bub.title=(s.dateNote?`Ngày nhập: ${s.dateNote} | `:"")+`Định mức: ${exp.basis} → kỳ vọng ${exp.expected} ${exp.unit} (từ ${exp.base})`;
+        bub.onclick=()=>startEdit(s.id);
+        bar.appendChild(bub);
+      });
+    });
+
+    listEl.appendChild(card);
+  });
+
+  // Global ruler
+  const ruler=document.getElementById('ruler');
+  ruler.innerHTML='';
+  ;[0,25,50,75,100].forEach(p=>{const rl=document.createElement('div');rl.className='rl';rl.style.left=p+'%';rl.innerHTML=`<i></i><span>${p}%</span>`;ruler.appendChild(rl)});
+
+  // Table
+  const tbody=document.getElementById('tblBody');
+  tbody.innerHTML='';
+  DATA.students.forEach(s=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${s.name}</td><td>${s.goal}</td><td>${s.completed}</td><td>${s.dateNote||''}</td><td class=\"text-end\"><button class=\"btn btn-sm btn-outline-dark me-1\" onclick=\"startEdit('${s.id}')\">Sửa</button><button class=\"btn btn-sm btn-danger\" onclick=\"removeItem('${s.id}')\">Xoá</button></td>`;
+    tbody.appendChild(tr);
+  });
+
+  // JSON editor
+  editor.value = JSON.stringify(DATA, null, 2);
+
+  renderAlerts();
+}
+
+function startEdit(id){
+  const s=DATA.students.find(x=>x.id===id); if(!s) return;
+  editingId=id;
+  document.getElementById('studentName').value=s.name;
+  document.getElementById('goal').value=s.goal;
+  document.getElementById('completed').value=s.completed;
+  document.getElementById('dateNote').value=s.dateNote||'';
+}
+function removeItem(id){ DATA.students=DATA.students.filter(s=>s.id!==id); if(editingId===id) editingId=null; render(); }
+
+// Save add/update
+document.getElementById('saveBtn').onclick=()=>{
+  const name=document.getElementById('studentName').value.trim();
+  const goal=document.getElementById('goal').value;
+  const completed=parseFloat(document.getElementById('completed').value);
+  const dateNote=document.getElementById('dateNote').value;
+  if(!name||isNaN(completed)) return alert('Nhập đủ thông tin');
+  if(editingId){
+    const i=DATA.students.findIndex(s=>s.id===editingId);
+    if(i>-1){ DATA.students[i] = {...DATA.students[i], name, goal, completed, dateNote}; }
+    editingId=null;
+  }else{
+    DATA.students.push({id:uid(), name, goal, completed, dateNote});
+  }
+  document.getElementById('studentName').value='';
+  document.getElementById('completed').value='';
+  document.getElementById('dateNote').value='';
+  render();
+};
+
+document.getElementById('resetBtn').onclick=()=>{
+  editingId=null;
+  document.getElementById('studentName').value='';
+  document.getElementById('completed').value='';
+  document.getElementById('dateNote').value='';
+};
+
+document.getElementById('apply').onclick=()=>{
+  try{
+    const obj=JSON.parse(editor.value);
+    if(!obj.students) obj.students=[];
+    obj.students = obj.students.map(s=> ({id: s.id||uid(), ...s}));
+    DATA=obj; editingId=null; render();
+  }catch{ alert('JSON không hợp lệ'); }
+};
+
+clearBtn.onclick=()=>{ if(confirm('Bạn có chắc muốn xóa toàn bộ dữ liệu HỌC VIÊN không?')){ DATA.students=[]; editingId=null; render();
+clearStudentsBtn.onclick=()=>{ DATA.students=[]; editingId=null; render(); };
+resetEverythingBtn.onclick=()=>{ if(confirm('Xoá TẤT CẢ: mục tiêu (targets) và học viên? Không thể hoàn tác!')){ DATA = { targets:{"Bookworms":8, "Extra":30, "Phát âm":11, "Giờ học":84}, students:[] }; editingId=null; render(); } };
+
+// Download current DATA as JSON
+downloadBtn.onclick=()=>{
+  try{
+    const dataStr = JSON.stringify(DATA, null, 2);
+    const blob = new Blob([dataStr], {type:'application/json'});
+    const a = document.createElement('a');
+    const cls = (document.getElementById('className')?.value || 'Class');
+    a.href = URL.createObjectURL(blob);
+    a.download = `StudentProgress-${cls}.json`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }catch(e){ alert('Không thể xuất JSON: '+ e.message); }
+};
+
+// Upload JSON and replace DATA
+uploadBtn.onclick=()=> uploadInput.click();
+uploadInput.onchange=(ev)=>{
+  const file = ev.target.files && ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const obj = JSON.parse(reader.result);
+      // sanitize
+      if(!obj.targets || typeof obj.targets!== 'object') obj.targets = {"Bookworms":8,"Extra":30,"Phát âm":11,"Giờ học":84};
+      if(!Array.isArray(obj.students)) obj.students = [];
+      obj.students = obj.students.map(s=> ({id: s.id||uid(), ...s}));
+      DATA = obj;
+      editor.value = JSON.stringify(DATA, null, 2);
+      editingId=null; render();
+      uploadInput.value = '';
+    }catch(e){ alert('File JSON không hợp lệ: '+ e.message); }
+  };
+  reader.onerror = ()=> alert('Lỗi đọc file. Hãy thử lại.');
+  reader.readAsText(file);
+};
+editingId=null; render(); } };
+
+// Settings save/clear
+const saveStartBtn=document.getElementById('saveStart');
+const clearStartBtn=document.getElementById('clearStart');
+saveStartBtn.onclick=()=>{
+  const v=document.getElementById('startDate').value;
+  if(!v) return alert('Hãy chọn ngày bắt đầu học');
+  SETTINGS.startDate=v; localStorage.setItem('startDate', v); renderAlerts();
+};
+clearStartBtn.onclick=()=>{ SETTINGS.startDate=null; localStorage.removeItem('startDate'); document.getElementById('startDate').value=''; renderAlerts(); };
+
+// Init seed data (including Extra)
+(function seed(){
+  DATA.students=[
+    {id:uid(), name:'Lan', goal:'Bookworms', completed:2, dateNote:'2025-09-25'},
+    {id:uid(), name:'Hiền', goal:'Bookworms', completed:4, dateNote:'2025-09-28'},
+    {id:uid(), name:'Ngọc', goal:'Phát âm', completed:3, dateNote:'2025-09-26'},
+    {id:uid(), name:'Đạt', goal:'Giờ học', completed:35, dateNote:'2025-09-29'},
+    {id:uid(), name:'Hùng', goal:'Extra', completed:8, dateNote:'2025-09-30'}
+  ];
+})();
+
+(function boot(){
+  const s=localStorage.getItem('startDate');
+  if(s){ SETTINGS.startDate=s; document.getElementById('startDate').value=s; }
+  render();
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Student Progress Tracker - Class B1</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  body {background:#f8f9fa; color:#212529;}
+  .chart-section {margin-bottom:2rem;}
+  .chart {position:relative; height:150px; border-radius:10px; overflow:visible; border:1px solid rgba(0,0,0,.1);} 
+  .chart-bar {position:absolute; inset:0; border-radius:10px; opacity:0.9;}
+  .video-books {background:#ffc107;}
+  .movies {background:#4f86ff;}
+  .pronunciation {background:#ff9800;}
+  .study-hours {background:#198754;}
+  .bubble {position:absolute; transform:translate(-50%,-50%); border-radius:999px; padding:.35rem .55rem; display:flex; align-items:center; justify-content:center; border:1px solid rgba(0,0,0,.25); background:radial-gradient(circle at 30% 20%, #fff, #e6e6e6); font-weight:700; cursor:pointer; white-space:nowrap}
+  .bubble .name{font-size:.9rem; margin-right:.25rem}
+  .bubble .val{font-size:.8rem; opacity:.85}
+  .tick {position:absolute; top:-1.2rem; text-align:center; transform:translateX(-50%); font-size:.9rem; color:#000;}
+  .tick i{display:block; height:100%; width:1px; background:rgba(0,0,0,.2); margin:6px auto 0;}
+  .chart-label {font-weight:700; margin-bottom:.4rem;}
+  .range-head {display:flex; justify-content:space-between; align-items:center; margin-bottom:.3rem;}
+  .toggle-arrow {font-size:1rem; cursor:pointer; background:none; border:none; color:#555;}
+  .toggle-arrow[aria-expanded="true"]::after{content:" ▲"}
+  .toggle-arrow[aria-expanded="false"]::after{content:" ▼"}
+  .text-muted-ux{color:#6c757d!important}
+  .ruler{position:relative; height:34px; margin-top:6px}
+  .ruler .rl{position:absolute; bottom:2px; transform:translateX(-50%); font-size:12px; color:#555}
+  .ruler .rl i{display:block; height:12px; width:1px; background:rgba(0,0,0,.15); margin:0 auto 4px}
+</style>
+</head>
+<body>
+    
+     <nav class="navbar bg-light fixed-top">
+  <div class="container">
+    <a class="navbar-brand" href="#">Bí Me</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Bí Me</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+        <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="index.html">A1</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="A2.html">A2</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="B1.html">B1</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+    
+<div class="container mt-5 py-4">
+  <h1 class="h3 text-center mb-3">Student Progress Tracker - Class B1</h1>
+  <div class="text-center mb-4">
+    <label for="className" class="form-label fw-semibold">Lớp:</label>
+    <input type="text" id="className" class="form-control d-inline-block w-auto text-center" placeholder="Nhập tên lớp...">
+  </div>
+
+  <div class="row">
+    <!-- Left column: Charts -->
+    <div class="col-lg-8">
+      <div id="alerts" class="mb-3"></div>
+
+      <!-- Pronunciation -->
+      <div class="chart-section">
+        <div class="chart-label">Phát âm</div>
+        <div id="chart-pron" class="chart pronunciation">
+          <div class="chart-bar"></div>
+          <div class="tick" style="left:25%"><b>1</b><i></i></div>
+          <div class="tick" style="left:50%"><b>3</b><i></i></div>
+          <div class="tick" style="left:75%"><b>4</b><i></i></div>
+          <div class="tick" style="left:100%"><b>6</b><i></i></div>
+        </div>
+      </div>
+
+      <!-- Video Books (two ranges) -->
+      <div class="chart-section">
+        <div class="chart-label">Video books</div>
+        <div class="vstack gap-3">
+          <div>
+            <div class="range-head"><div class="range-title fw-semibold">0–13</div></div>
+            <div id="chart-vb-0-13" class="chart video-books">
+              <div class="chart-bar"></div>
+              <div class="tick" style="left:50%"><b>6</b><i></i></div>
+              <div class="tick" style="left:100%"><b>13</b><i></i></div>
+            </div>
+          </div>
+          <div>
+            <div class="range-head">
+              <div class="range-title fw-semibold">13–26</div>
+              <button class="toggle-arrow" type="button" data-bs-toggle="collapse" data-bs-target="#videobooks-second" aria-expanded="false" aria-controls="videobooks-second"></button>
+            </div>
+            <div id="videobooks-second" class="collapse">
+              <div id="chart-vb-13-26" class="chart video-books">
+                <div class="chart-bar"></div>
+                <div class="tick" style="left:50%"><b>19</b><i></i></div>
+                <div class="tick" style="left:100%"><b>26</b><i></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Movies (two ranges) -->
+      <div class="chart-section">
+        <div class="chart-label">Movies</div>
+        <div class="vstack gap-3">
+          <div>
+            <div class="range-head"><div class="range-title fw-semibold">0–30</div></div>
+            <div id="chart-mv-0-30" class="chart movies">
+              <div class="chart-bar"></div>
+              <div class="tick" style="left:50%"><b>15</b><i></i></div>
+              <div class="tick" style="left:100%"><b>30</b><i></i></div>
+            </div>
+          </div>
+          <div>
+            <div class="range-head">
+              <div class="range-title fw-semibold">30–61</div>
+              <button class="toggle-arrow" type="button" data-bs-toggle="collapse" data-bs-target="#movies-second" aria-expanded="false" aria-controls="movies-second"></button>
+            </div>
+            <div id="movies-second" class="collapse">
+              <div id="chart-mv-30-61" class="chart movies">
+                <div class="chart-bar"></div>
+                <div class="tick" style="left:50%"><b>45</b><i></i></div>
+                <div class="tick" style="left:100%"><b>61</b><i></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Study Hours (four ranges) -->
+      <div class="chart-section">
+        <div class="chart-label">Giờ học</div>
+        <div class="vstack gap-3">
+          <div>
+            <div class="range-head"><div class="range-title fw-semibold">0–21</div></div>
+            <div id="chart-hr-0-21" class="chart study-hours">
+              <div class="chart-bar"></div>
+              <div class="tick" style="left:50%"><b>10</b><i></i></div>
+              <div class="tick" style="left:100%"><b>21</b><i></i></div>
+            </div>
+          </div>
+          <div>
+            <div class="range-head"><div class="range-title fw-semibold">21–42</div>
+              <button class="toggle-arrow" type="button" data-bs-toggle="collapse" data-bs-target="#study2" aria-expanded="false" aria-controls="study2"></button>
+            </div>
+            <div id="study2" class="collapse">
+              <div id="chart-hr-21-42" class="chart study-hours">
+                <div class="chart-bar"></div>
+                <div class="tick" style="left:50%"><b>31</b><i></i></div>
+                <div class="tick" style="left:100%"><b>42</b><i></i></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="range-head"><div class="range-title fw-semibold">42–63</div>
+              <button class="toggle-arrow" type="button" data-bs-toggle="collapse" data-bs-target="#study3" aria-expanded="false" aria-controls="study3"></button>
+            </div>
+            <div id="study3" class="collapse">
+              <div id="chart-hr-42-63" class="chart study-hours">
+                <div class="chart-bar"></div>
+                <div class="tick" style="left:50%"><b>52</b><i></i></div>
+                <div class="tick" style="left:100%"><b>63</b><i></i></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="range-head"><div class="range-title fw-semibold">63–84</div>
+              <button class="toggle-arrow" type="button" data-bs-toggle="collapse" data-bs-target="#study4" aria-expanded="false" aria-controls="study4"></button>
+            </div>
+            <div id="study4" class="collapse">
+              <div id="chart-hr-63-84" class="chart study-hours">
+                <div class="chart-bar"></div>
+                <div class="tick" style="left:50%"><b>73</b><i></i></div>
+                <div class="tick" style="left:100%"><b>84</b><i></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: Settings & Data -->
+    <div class="col-lg-4">
+      <div class="card mb-3 h-100">
+        <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+          <span>Cài đặt & dữ liệu</span>
+          <span id="startBadge" class="badge text-bg-info d-none">Bắt đầu: <span id="startBadgeVal"></span></span>
+        </div>
+        <div class="card-body overflow-auto" style="max-height:85vh">
+          <!-- Settings -->
+          <div class="mb-3">
+            <label for="startDate" class="form-label">Ngày bắt đầu học:</label>
+            <input type="date" id="startDate" class="form-control mb-2">
+            <div class="d-flex gap-2 mb-3">
+              <button id="saveStart" class="btn btn-primary">Lưu</button>
+              <button id="clearStart" class="btn btn-outline-secondary">Xoá mốc</button>
+            </div>
+            <div class="small text-muted">Dùng mốc này để tính định mức: Giờ học ≥ 1 giờ/ngày; Video books ≥ 1/tuần; Phát âm ≥ 1 video/tuần; Movies ≥ 1/tuần.</div>
+          </div>
+
+          <!-- Student form -->
+          <div class="mb-3">
+            <label for="studentName" class="form-label">Tên học viên</label>
+            <input type="text" id="studentName" class="form-control mb-2">
+            <label for="goal" class="form-label">Mục tiêu</label>
+            <select id="goal" class="form-select mb-2">
+              <option>Phát âm</option>
+              <option>Video books</option>
+              <option>Movies</option>
+              <option>Giờ học</option>
+            </select>
+            <label for="completed" class="form-label">Đã làm</label>
+            <input type="number" id="completed" class="form-control mb-2" step="0.1" min="0">
+            <label for="dateNote" class="form-label">Ngày nhập mục tiêu</label>
+            <input type="date" id="dateNote" class="form-control mb-3">
+            <div class="d-flex gap-2 mb-3">
+              <button id="saveBtn" class="btn btn-success">Lưu học viên</button>
+              <button id="resetBtn" class="btn btn-outline-secondary">Làm mới</button>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="mb-3">
+            <h6 class="fw-bold">Danh sách học viên</h6>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead><tr><th>Tên</th><th>Mục tiêu</th><th>Đã làm</th><th>Ngày</th><th class="text-end">Hành động</th></tr></thead>
+                <tbody id="tblBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- JSON -->
+          <div class="mb-3">
+            <h6 class="fw-bold">Dữ liệu JSON</h6>
+            <textarea id="editor" class="form-control mb-2" rows="6"></textarea>
+            <div class="d-flex flex-wrap gap-2">
+              <button id="apply" class="btn btn-primary">Áp dụng</button>
+              <button id="downloadJson" class="btn btn-outline-secondary">Tải JSON</button>
+              <input id="uploadJson" type="file" accept="application/json" class="d-none" />
+              <button id="uploadJsonBtn" class="btn btn-outline-dark">Upload JSON</button>
+              <div class="ms-auto btn-group">
+                <button id="clearStudents" class="btn btn-danger btn-sm" type="button">Chỉ xoá học viên</button>
+                <button id="resetEverything" class="btn btn-danger btn-sm" type="button">Xoá tất cả</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ===== STATE =====
+let SETTINGS={startDate:null};
+let DATA={
+  targets:{ 'Phát âm':6, 'Video books':26, 'Movies':61, 'Giờ học':84 },
+  students:[]
+};
+let editingId=null;
+
+// ===== HELPERS =====
+const $=sel=>document.querySelector(sel);
+function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
+function todayISO(){const d=new Date();d.setHours(0,0,0,0);return d.toISOString().slice(0,10)}
+function daysBetween(a,b){const A=new Date(a),B=new Date(b);A.setHours(0,0,0,0);B.setHours(0,0,0,0);return Math.max(0,Math.round((B-A)/86400000));}
+function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
+
+function computeExpectations(s){
+  const base=SETTINGS.startDate||s.dateNote||todayISO();
+  const d=daysBetween(base,todayISO())+1;
+  if(s.goal==='Giờ học') return {expected:d,unit:'giờ',basis:'1 giờ/ngày',base};
+  if(s.goal==='Video books') return {expected:Math.max(1,Math.ceil(d/7)),unit:'video',basis:'1/tuần',base};
+  if(s.goal==='Phát âm') return {expected:Math.max(1,Math.ceil(d/7)),unit:'video',basis:'1/tuần',base};
+  if(s.goal==='Movies') return {expected:Math.max(1,Math.ceil(d/7)),unit:'movie',basis:'1/tuần',base};
+  return {expected:0,unit:'',basis:'',base};
+}
+
+// ===== ALERTS =====
+function renderAlerts(){
+  const wrap=$('#alerts'); wrap.innerHTML='';
+  const problems=[], missing=[];
+  DATA.students.forEach(s=>{
+    const hasBase = Boolean(SETTINGS.startDate || s.dateNote);
+    if(!hasBase){missing.push(`<b>${s.name}</b> – thiếu ngày cho <i>${s.goal}</i>`);return;}
+    const exp=computeExpectations(s); const done=parseFloat(s.completed||0);
+    if(done<exp.expected){
+      problems.push(`<b>${s.name}</b> – <i>${s.goal}</i>: ${done}/${exp.expected} ${exp.unit} (thiếu ${(exp.expected-done).toFixed(1)}); mốc ${exp.base}, quy định ${exp.basis}`);
+    }
+  });
+  const badge=$('#startBadge'), badgeVal=$('#startBadgeVal');
+  if(SETTINGS.startDate){badge.classList.remove('d-none');badgeVal.textContent=SETTINGS.startDate;}else{badge.classList.add('d-none');}
+  if(problems.length){const el=document.createElement('div');el.className='alert alert-danger';el.innerHTML=`<div class='fw-bold mb-1'>Cảnh báo: Chưa đạt định mức</div><ul class='mb-0'>${problems.map(x=>`<li>${x}</li>`).join('')}</ul>`;wrap.appendChild(el);} 
+  if(missing.length){const el=document.createElement('div');el.className='alert alert-warning';el.innerHTML=`<div class='fw-bold mb-1'>Thiếu ngày mốc</div><ul class='mb-0'>${missing.map(x=>`<li>${x}</li>`).join('')}</ul>`;wrap.appendChild(el);} 
+  if(!problems.length && !missing.length && DATA.students.length){const el=document.createElement('div');el.className='alert alert-success';el.textContent='Tất cả đều đạt định mức tính tới hôm nay ('+todayISO()+').';wrap.appendChild(el);} 
+}
+
+// ===== BUBBLES =====
+function clearBubbles(){
+  ['#chart-pron','#chart-vb-0-13','#chart-vb-13-26','#chart-mv-0-30','#chart-mv-30-61','#chart-hr-0-21','#chart-hr-21-42','#chart-hr-42-63','#chart-hr-63-84']
+    .forEach(id=>{const el=$(id); if(!el) return; el.querySelectorAll('.bubble').forEach(b=>b.remove());});
+}
+function placeBubble(container, pct, idx, s, tooltip){
+  const bub=document.createElement('div');
+  bub.className='bubble'; bub.dataset.id=s.id;
+  bub.style.left=clamp(pct,0,100)+'%';
+  bub.style.top=`calc(50% - ${idx*26}px)`;
+  bub.innerHTML=`<span class="name">${s.name}</span><span class="val">${s.completed}</span>`;
+  bub.title=tooltip; bub.onclick=()=>startEdit(s.id);
+  container.appendChild(bub);
+}
+function renderBubbles(){
+  clearBubbles();
+  const byGoal={}; DATA.students.forEach(s=>{(byGoal[s.goal] ||= []).push(s)});
+
+  // Phát âm 0–6
+  if(byGoal['Phát âm']){
+    const el=$('#chart-pron'); const map={};
+    byGoal['Phát âm'].sort((a,b)=>a.completed-b.completed).forEach(s=>{(map[s.completed] ||= []).push(s)});
+    Object.entries(map).forEach(([v,arr])=>{
+      arr.forEach((s,i)=>{
+        const pct=(parseFloat(v)/DATA.targets['Phát âm'])*100; const exp=computeExpectations(s);
+        placeBubble(el,pct,i,s,(s.dateNote?`Ngày nhập: ${s.dateNote} | `:``)+`Định mức ${exp.basis} → kỳ vọng ${exp.expected} ${exp.unit}`);
+      });
+    });
+  }
+  // Video books: 0–13 & 13–26
+  if(byGoal['Video books']){
+    const t=DATA.targets['Video books']; const map={};
+    byGoal['Video books'].sort((a,b)=>a.completed-b.completed).forEach(s=>{(map[s.completed] ||= []).push(s)});
+    Object.entries(map).forEach(([v,arr])=>{
+      arr.forEach((s,i)=>{
+        const val=parseFloat(v); let el,pct;
+        if(val<=13){ el=$('#chart-vb-0-13'); pct=(val/13)*100; }
+        else { el=$('#chart-vb-13-26'); pct=((val-13)/(t-13))*100; }
+        const exp=computeExpectations(s);
+        placeBubble(el,pct,i,s,(s.dateNote?`Ngày nhập: ${s.dateNote} | `:``)+`Định mức ${exp.basis} → kỳ vọng ${exp.expected} ${exp.unit}`);
+      });
+    });
+  }
+  // Movies: 0–30 & 30–61
+  if(byGoal['Movies']){
+    const t=DATA.targets['Movies']; const map={};
+    byGoal['Movies'].sort((a,b)=>a.completed-b.completed).forEach(s=>{(map[s.completed] ||= []).push(s)});
+    Object.entries(map).forEach(([v,arr])=>{
+      arr.forEach((s,i)=>{
+        const val=parseFloat(v); let el,pct;
+        if(val<=30){ el=$('#chart-mv-0-30'); pct=(val/30)*100; }
+        else { el=$('#chart-mv-30-61'); pct=((val-30)/(t-30))*100; }
+        const exp=computeExpectations(s);
+        placeBubble(el,pct,i,s,(s.dateNote?`Ngày nhập: ${s.dateNote} | `:``)+`Định mức ${exp.basis} → kỳ vọng ${exp.expected} ${exp.unit}`);
+      });
+    });
+  }
+  // Giờ học: 4 ranges
+  if(byGoal['Giờ học']){
+    const ranges=[{id:'#chart-hr-0-21',start:0,end:21},{id:'#chart-hr-21-42',start:21,end:42},{id:'#chart-hr-42-63',start:42,end:63},{id:'#chart-hr-63-84',start:63,end:84}];
+    const map={}; byGoal['Giờ học'].sort((a,b)=>a.completed-b.completed).forEach(s=>{(map[s.completed] ||= []).push(s)});
+    Object.entries(map).forEach(([v,arr])=>{
+      arr.forEach((s,i)=>{
+        const val=parseFloat(v);
+        const rg=ranges.find(r=> (val>r.start && val<=r.end) || (val===0 && r.start===0)) || ranges[0];
+        const el=$(rg.id); const base=rg.start; const span=(rg.end-rg.start);
+        const pct=((val-base)/span)*100; const exp=computeExpectations(s);
+        placeBubble(el,pct,i,s,(s.dateNote?`Ngày nhập: ${s.dateNote} | `:``)+`Định mức ${exp.basis} → kỳ vọng ${exp.expected} ${exp.unit}`);
+      });
+    });
+  }
+}
+
+// ===== TABLE & FORM =====
+function renderTable(){
+  const tbody=$('#tblBody'); tbody.innerHTML='';
+  DATA.students.forEach(s=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${s.name}</td><td>${s.goal}</td><td>${s.completed}</td><td>${s.dateNote||''}</td><td class='text-end'><button class='btn btn-sm btn-outline-dark me-1' data-id='${s.id}' data-act='edit'>Sửa</button><button class='btn btn-sm btn-danger' data-id='${s.id}' data-act='del'>Xoá</button></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.onclick=(e)=>{
+    const btn=e.target.closest('button'); if(!btn) return;
+    const id=btn.getAttribute('data-id'); const act=btn.getAttribute('data-act');
+    if(act==='edit') startEdit(id); else if(act==='del') removeItem(id);
+  };
+}
+
+function startEdit(id){
+  const s=DATA.students.find(x=>x.id===id); if(!s) return;
+  editingId=id; $('#studentName').value=s.name; $('#goal').value=s.goal; $('#completed').value=s.completed; $('#dateNote').value=s.dateNote||'';
+}
+function removeItem(id){ DATA.students=DATA.students.filter(s=>s.id!==id); if(editingId===id) editingId=null; refreshAll(); }
+
+// ===== REFRESH ALL =====
+function refreshAll(){
+  renderAlerts(); renderTable(); $('#editor').value=JSON.stringify(DATA,null,2); renderBubbles();
+}
+
+// ===== INIT & EVENTS =====
+window.addEventListener('DOMContentLoaded',()=>{
+  // Restore class name (optional)
+  const savedClass=localStorage.getItem('b1_className'); if(savedClass) $('#className').value=savedClass;
+  $('#className').addEventListener('input',()=>{ localStorage.setItem('b1_className',$('#className').value||''); });
+
+  const s=localStorage.getItem('b1_startDate'); if(s){ SETTINGS.startDate=s; $('#startDate').value=s; }
+  // Seed sample data (remove if not needed)
+  DATA.students=[
+    {id:uid(), name:'Nhi', goal:'Video books', completed:6, dateNote:'2025-09-28'},
+    {id:uid(), name:'Vy', goal:'Phát âm', completed:3, dateNote:'2025-09-26'},
+    {id:uid(), name:'Trí', goal:'Movies', completed:18, dateNote:'2025-09-27'},
+    {id:uid(), name:'Thuận', goal:'Giờ học', completed:35, dateNote:'2025-09-29'},
+    {id:uid(), name:'Pha', goal:'Movies', completed:45, dateNote:'2025-09-30'}
+  ];
+  refreshAll();
+
+  // Settings events
+  $('#saveStart').onclick=()=>{ const v=$('#startDate').value; if(!v) return alert('Chọn ngày bắt đầu'); SETTINGS.startDate=v; localStorage.setItem('b1_startDate', v); renderAlerts(); };
+  $('#clearStart').onclick=()=>{ SETTINGS.startDate=null; localStorage.removeItem('b1_startDate'); $('#startDate').value=''; renderAlerts(); };
+
+  // Form events
+  $('#saveBtn').onclick=()=>{
+    const name=$('#studentName').value.trim(); const goal=$('#goal').value; const completed=parseFloat($('#completed').value); const dateNote=$('#dateNote').value;
+    if(!name||isNaN(completed)) return alert('Nhập đủ tên và số đã làm');
+    if(editingId){ const i=DATA.students.findIndex(s=>s.id===editingId); if(i>-1){ DATA.students[i]={...DATA.students[i], name, goal, completed, dateNote}; } editingId=null; }
+    else { DATA.students.push({id:uid(), name, goal, completed, dateNote}); }
+    $('#studentName').value=''; $('#completed').value=''; $('#dateNote').value='';
+    refreshAll();
+  };
+  $('#resetBtn').onclick=()=>{ editingId=null; $('#studentName').value=''; $('#completed').value=''; $('#dateNote').value=''; };
+
+  // JSON panel
+  $('#apply').onclick=()=>{ try{ const obj=JSON.parse($('#editor').value); if(!obj.students) obj.students=[]; obj.students=obj.students.map(s=>({id:s.id||uid(), ...s})); DATA=obj; refreshAll(); }catch{ alert('JSON không hợp lệ'); } };
+  $('#downloadJson').onclick=()=>{ try{ const dataStr=JSON.stringify(DATA,null,2); const blob=new Blob([dataStr],{type:'application/json'}); const a=document.createElement('a'); const cls=$('#className').value||'B1'; a.href=URL.createObjectURL(blob); a.download=`StudentProgress-${cls}.json`; document.body.appendChild(a); a.click(); URL.revokeObjectURL(a.href); a.remove(); }catch(e){ alert('Không thể xuất JSON: '+e.message); } };
+  $('#uploadJsonBtn').onclick=()=> $('#uploadJson').click();
+  $('#uploadJson').onchange=(ev)=>{ const file=ev.target.files && ev.target.files[0]; if(!file) return; const reader=new FileReader(); reader.onload=()=>{ try{ const obj=JSON.parse(reader.result); if(!obj.targets) obj.targets={'Phát âm':6,'Video books':26,'Movies':61,'Giờ học':84}; if(!Array.isArray(obj.students)) obj.students=[]; obj.students=obj.students.map(s=>({id:s.id||uid(), ...s})); DATA=obj; refreshAll(); ev.target.value=''; }catch(e){ alert('File JSON không hợp lệ: '+e.message); } }; reader.onerror=()=>alert('Lỗi đọc file'); reader.readAsText(file); };
+
+  // Danger buttons
+  $('#clearStudents').onclick=()=>{ if(confirm('Xoá toàn bộ danh sách học viên?')){ DATA.students=[]; refreshAll(); } };
+  $('#resetEverything').onclick=()=>{ if(confirm('Xoá TẤT CẢ dữ liệu và mục tiêu mặc định?')){ DATA={targets:{'Phát âm':6,'Video books':26,'Movies':61,'Giờ học':84}, students:[]}; SETTINGS.startDate=null; localStorage.removeItem('b1_startDate'); $('#startDate').value=''; refreshAll(); } };
+});
+</script>
+</body>
+</html>
